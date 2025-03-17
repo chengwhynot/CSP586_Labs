@@ -1,24 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
 import Avatar from '@mui/material/Avatar';
 
 const Navbar = ({ auth, setAuth }) => {
-  const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
-
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
 
   const handleLogout = () => {
     localStorage.removeItem('auth');
@@ -47,20 +36,6 @@ const Navbar = ({ auth, setAuth }) => {
         <Button color="inherit" component={Link} to="/create">
           Create Post
         </Button>
-        <Button color="inherit" onClick={handleClick}>
-          Topics
-        </Button>
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleClose}
-        >
-          <MenuItem onClick={handleClose}>Culture</MenuItem>
-          <MenuItem onClick={handleClose}>Social</MenuItem>
-          <MenuItem onClick={handleClose}>Sports</MenuItem>
-          <MenuItem onClick={handleClose}>Technology</MenuItem>
-          <MenuItem onClick={handleClose}>Travel</MenuItem>
-        </Menu>
         {auth ? (
           <>
             <Avatar style={{ marginLeft: '10px' }}>{getAvatar(auth.username)}</Avatar>
