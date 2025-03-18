@@ -19,6 +19,17 @@ const PostForm = ({ addPost, topics }) => {
       createdAt: new Date().toISOString()
     };
     addPost(newPost);
+
+    // Check if the topic is in the subscribed topics list
+    const subscribedTopics = JSON.parse(localStorage.getItem('subscribedTopics')) || [];
+    if (subscribedTopics.includes(topic)) {
+      const notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+      notifications.push({ topic, title });
+      localStorage.setItem('notifications', JSON.stringify(notifications));
+      // Trigger storage event to update notifications in Navbar
+      window.dispatchEvent(new Event('storage'));
+    }
+
     setTitle('');
     setContent('');
     setTopic('');

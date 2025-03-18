@@ -1,13 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
+import IconButton from '@mui/material/IconButton';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import Badge from '@mui/material/Badge';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import ListItemText from '@mui/material/ListItemText';
 
-const Navbar = ({ auth, setAuth }) => {
+const Navbar = ({ auth, setAuth, subscribedTopics }) => {
+  const [notifications, setNotifications] = useState([]);
+  const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Fetch notifications from localStorage
+    const fetchNotifications = () => {
+      const storedNotifications = JSON.parse(localStorage.getItem('notifications')) || [];
+      setNotifications(storedNotifications);
+    };
+
+    fetchNotifications();
+
+    // Listen for storage events to update notifications in real-time
+    window.addEventListener('storage', fetchNotifications);
+
+    return () => {
+      window.removeEventListener('storage', fetchNotifications);
+    };
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('auth');
@@ -24,6 +49,22 @@ const Navbar = ({ auth, setAuth }) => {
     return '';
   };
 
+  const handleNotificationsClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleNotificationsClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleClearNotifications = () => {
+    localStorage.removeItem('notifications');
+    setNotifications([]);
+    handleNotificationsClose();
+    // Trigger storage event to update notifications in Navbar
+    window.dispatchEvent(new Event('storage'));
+  };
+
   return (
     <AppBar position="static">
       <Toolbar>
@@ -38,6 +79,33 @@ const Navbar = ({ auth, setAuth }) => {
         </Button>
         {auth ? (
           <>
+            <IconButton color="inherit" onClick={handleNotificationsClick}>
+              <Badge
+                badgeContent={notifications.length}
+                color="secondary"
+                variant="dot"
+                anchorOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+              >
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleNotificationsClose}
+            >
+              <MenuItem onClick={handleClearNotifications}>
+                <ListItemText primary="Clear Notifications" />
+              </MenuItem>
+              {notifications.map((notification, index) => (
+                <MenuItem key={index}>
+                  <ListItemText primary={notification.title} secondary={notification.topic} />
+                </MenuItem>
+              ))}
+            </Menu>
             <Avatar style={{ marginLeft: '10px' }}>{getAvatar(auth.username)}</Avatar>
             <Button color="inherit" onClick={handleLogout}>
               Logout

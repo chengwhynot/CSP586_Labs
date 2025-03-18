@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import PostForm from './components/PostForm';
 import PostList from './components/PostList';
@@ -8,6 +8,7 @@ import Login from './components/Login';
 const App = () => {
   const [posts, setPosts] = useState([]);
   const [auth, setAuth] = useState(null);
+  const [subscribedTopics, setSubscribedTopics] = useState([]);
   const topics = ["Culture", "Social", "Sports", "Technology", "Travel"];
 
   useEffect(() => {
@@ -20,6 +21,9 @@ const App = () => {
     if (storedPosts) {
       setPosts(JSON.parse(storedPosts));
     }
+
+    const storedSubscribedTopics = JSON.parse(localStorage.getItem('subscribedTopics')) || [];
+    setSubscribedTopics(storedSubscribedTopics);
   }, []);
 
   const addPost = (post) => {
@@ -28,11 +32,16 @@ const App = () => {
     localStorage.setItem('posts', JSON.stringify(updatedPosts));
   };
 
+  const handleSubscribe = (newSubscribedTopics) => {
+    setSubscribedTopics(newSubscribedTopics);
+    localStorage.setItem('subscribedTopics', JSON.stringify(newSubscribedTopics));
+  };
+
   return (
     <Router>
-      <Navbar auth={auth} setAuth={setAuth} />
+      <Navbar auth={auth} setAuth={setAuth} subscribedTopics={subscribedTopics} />
       <Routes>
-        <Route path="/" element={<PostList posts={posts} />} />
+        <Route path="/" element={<PostList posts={posts} user={auth} onSubscribe={handleSubscribe} />} />
         <Route path="/create" element={<PostForm addPost={addPost} topics={topics} />} />
         <Route path="/login" element={<Login setAuth={setAuth} />} />
       </Routes>
