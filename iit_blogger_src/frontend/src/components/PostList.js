@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Grid, Card, CardContent, Typography, Select, MenuItem, FormControl, InputLabel, Button } from '@mui/material';
 
 const PostList = ({ posts, user, onSubscribe }) => {
   const [selectedTopic, setSelectedTopic] = useState('');
   const [subscribedTopics, setSubscribedTopics] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch subscribed topics from localStorage
@@ -31,6 +33,10 @@ const PostList = ({ posts, user, onSubscribe }) => {
     localStorage.setItem('subscribedTopics', JSON.stringify(newSubscribedTopics));
     alert(`Unsubscribed from ${topic} successfully!`);
     onSubscribe(newSubscribedTopics);
+  };
+
+  const handleCardClick = (postId) => {
+    navigate(`/post/${postId}`);
   };
 
   const filteredPosts = selectedTopic
@@ -66,8 +72,8 @@ const PostList = ({ posts, user, onSubscribe }) => {
       </div>
       <Grid container spacing={3}>
         {filteredPosts.map((post, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
-            <Card>
+          <Grid item xs={12} sm={6} md={4} key={post.id}>
+            <Card onClick={() => handleCardClick(post.id)} style={{ cursor: 'pointer' }}>
               <CardContent>
                 <Typography variant="h5" component="div">
                   {post.title}

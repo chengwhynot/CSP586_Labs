@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import PostForm from './components/PostForm';
 import PostList from './components/PostList';
+import PostDetail from './components/PostDetail';
 import Login from './components/Login';
 
 const App = () => {
@@ -27,7 +28,8 @@ const App = () => {
   }, []);
 
   const addPost = (post) => {
-    const updatedPosts = [...posts, post];
+    const newPost = { ...post, id: posts.length ? posts[posts.length - 1].id + 1 : 1 };
+    const updatedPosts = [...posts, newPost];
     setPosts(updatedPosts);
     localStorage.setItem('posts', JSON.stringify(updatedPosts));
   };
@@ -43,6 +45,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<PostList posts={posts} user={auth} onSubscribe={handleSubscribe} />} />
         <Route path="/create" element={<PostForm addPost={addPost} topics={topics} />} />
+        <Route path="/post/:postId" element={<PostDetail posts={posts} />} />
         <Route path="/login" element={<Login setAuth={setAuth} />} />
       </Routes>
     </Router>
