@@ -6,11 +6,12 @@ const PostForm = ({ addPost, topics }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [topic, setTopic] = useState('');
-  const [author, setAuthor] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const auth = JSON.parse(localStorage.getItem('auth'));
+    const author = auth ? auth.username : 'Anonymous';
     const newPost = {
       title,
       content,
@@ -33,7 +34,6 @@ const PostForm = ({ addPost, topics }) => {
     setTitle('');
     setContent('');
     setTopic('');
-    setAuthor('');
     navigate('/');
   };
 
@@ -67,13 +67,6 @@ const PostForm = ({ addPost, topics }) => {
             ))}
           </Select>
         </FormControl>
-        <TextField
-          label="Author"
-          value={author}
-          onChange={(e) => setAuthor(e.target.value)}
-          fullWidth
-          margin="normal"
-        />
         <Button type="submit" variant="contained" color="primary">
           Create Post
         </Button>
