@@ -4,6 +4,7 @@ const fs = require('fs');
 const https = require('https');
 const cors = require('cors');
 const morgan = require('morgan');
+const { HttpsProxyAgent } = require('https-proxy-agent');
 require('dotenv').config();
 
 const app = express();
@@ -12,8 +13,11 @@ const port = 3001;
 const elasticsearchUrl = 'https://localhost:9200';
 const elasticsearchUsername = 'elastic';
 const elasticsearchPassword = process.env.ELASTIC_PASSWORD;
+const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL;
 
 console.log('Elasticsearch Password:', elasticsearchPassword); // 输出日志，查看是否正确加载了密码
+console.log('https_proxy: ', process.env.HTTPS_PROXY);
+console.log('http_proxy: ', process.env.HTTP_PROXY);
 
 const httpsAgent = new https.Agent({
   ca: fs.readFileSync('/Users/Q604934/.ssh/http_ca_elastic_local.crt'),
@@ -56,21 +60,16 @@ app.get('/api/posts', async (req, res) => {
       },
       httpsAgent,
     });
-    console.log("send out to es")
     const hits = response.data.hits.hits;
-    console.log('hits: ', hits)
+    console.log('hits: ', hits);
     if (hits.length > 0) {
       res.send(hits.map((hit) => hit._source));
     } else {
       res.send([]);
     }
   } catch (error) {
-    if (error.response && error.response.status === 404) {
-      res.send({});
-    } else {
-      console.error('Error fetching post:', error.message); // 输出错误日志
-      res.status(500).send({ error: error.message });
-    }
+    console.error('Error fetching posts:', error.message); // 输出错误日志
+    res.status(500).send({ error: error.message });
   }
 });
 
@@ -91,68 +90,40 @@ app.get('/api/posts/:id', async (req, res) => {
       res.send({});
     }
   } catch (error) {
-    console.error('Error fetching post:', error.message); // 输出错误日志
-    res.status(500).send({ error: error.message });
+    if (error.response && error.response.status === 404) {
+      res.send({});
+    } else {
+      console.error('Error fetching post:', error.message); // 输出错误日志
+      res.status(500).send({ error: error.message });
+    }
   }
 });
 
-app.get('/api/posts/:id/replies', async (req, res) => {
-  const { id } = req.params;
-  console.log(`Received GET /api/posts/${id}/replies request`); // 输出日志，记录请求
+app.post('/api/generate-reply', async (req, res) => {
+  const { content } = req.body;
+  //const proxyAgent = new HttpsProxyAgent(process.env.HTTPS_PROXY);
+  const open_ai_url = OPENAI_BASE_URL+'/chat/completions';
+  console.info(open_ai_url);
   try {
-    const response = await axios.get(`${elasticsearchUrl}/posts/_doc/${id}`, {
-      auth: {
-        username: elasticsearchUsername,
-        password: elasticsearchPassword,
+    const response = await axios.post(
+      open_ai_url,
+      {
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: `Generate a reply for the post: ${content}` }],
       },
-      httpsAgent,
-    });
-    if (response.data.found) {
-      res.send(response.data._source.replies || []);
-    } else {
-      res.send([]);
-    }
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        }//,
+        // httpsAgent: proxyAgent,
+      }
+    );
+    console.info('OpenAI response: ',response.data);
+    const generatedReply = response.data.choices[0].message.content;
+    res.send({ reply: generatedReply });
   } catch (error) {
-    console.error('Error fetching replies:', error.message); // 输出错误日志
-    res.status(500).send({ error: error.message });
-  }
-});
-
-app.post('/api/posts/:id/replies', async (req, res) => {
-  const { id } = req.params;
-  const { content, author } = req.body;
-  console.log(`Received POST /api/posts/${id}/replies request:`, req.body); // 输出日志，记录请求体
-  try {
-    const postResponse = await axios.get(`${elasticsearchUrl}/posts/_doc/${id}`, {
-      auth: {
-        username: elasticsearchUsername,
-        password: elasticsearchPassword,
-      },
-      httpsAgent,
-    });
-    if (postResponse.data.found) {
-      const post = postResponse.data._source;
-      const newReply = { content, author, createdAt: new Date().toISOString() };
-      const updatedReplies = [...(post.replies || []), newReply];
-      post.replies = updatedReplies;
-
-      await axios.post(
-        `${elasticsearchUrl}/posts/_doc/${id}`,
-        post,
-        {
-          auth: {
-            username: elasticsearchUsername,
-            password: elasticsearchPassword,
-          },
-          httpsAgent,
-        }
-      );
-      res.status(201).send({ message: 'Reply added' });
-    } else {
-      res.status(404).send({ error: 'Post not found' });
-    }
-  } catch (error) {
-    console.error('Error adding reply:', error.message); // 输出错误日志
+    console.error('Error generating reply:', error.message);
     res.status(500).send({ error: error.message });
   }
 });

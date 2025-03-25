@@ -1,21 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Container, Typography, Divider, TextField, Button } from '@mui/material';
+import axios from 'axios';
 
 const PostDetail = ({ posts }) => {
   const { postId } = useParams();
-  const post = posts.find((p) => p.id === parseInt(postId));
+  const [post, setPost] = useState(null);
   const [reply, setReply] = useState('');
-  const [replies, setReplies] = useState(post?.replies || []);
+  const [replies, setReplies] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchPost = () => {
+      const storedPosts = JSON.parse(localStorage.getItem('posts')) || [];
+      const post = storedPosts.find((p) => p.id === parseInt(postId));
+      if (post) {
+        setPost(post);
+        setReplies(post.replies || []);
+      }
+    };
+
+    fetchPost();
+  }, [postId]);
 
   const handleReplySubmit = () => {
-    const newReplies = [...replies, { content: reply, author: 'Current User', createdAt: new Date().toISOString() }];
-    setReplies(newReplies);
+    const newReply = { content: reply, author: 'Current User', createdAt: new Date().toISOString() };
+    const updatedReplies = [...replies, newReply];
+    setReplies(updatedReplies);
     setReply('');
+
     // Update the post with the new replies in the main posts array
-    if (post) {
-      post.replies = newReplies;
-      localStorage.setItem('posts', JSON.stringify(posts));
+    const storedPosts = JSON.parse(localStorage.getItem('posts')) || [];
+    const updatedPosts = storedPosts.map((p) => {
+      if (p.id === parseInt(postId)) {
+        return { ...p, replies: updatedReplies };
+      }
+      return p;
+    });
+    localStorage.setItem('posts', JSON.stringify(updatedPosts));
+  };
+
+  const handleGenerateReply = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.post('http://localhost:3001/api/generate-reply', { content: post.content });
+      const generatedReply = response.data.reply;
+      setReply(generatedReply);
+    } catch (error) {
+      console.error('Error generating reply:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -45,6 +79,12 @@ const PostDetail = ({ posts }) => {
           </div>
         ))
       )}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography variant="h6">Add a Reply</Typography>
+        <Button variant="contained" color="primary" onClick={handleGenerateReply} disabled={loading}>
+          {loading ? 'Generating...' : 'Generate Reply'}
+        </Button>
+      </div>
       <TextField
         label="Reply"
         value={reply}
