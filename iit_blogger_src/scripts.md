@@ -28,6 +28,10 @@ Explanation:
 使用 curl -X POST http://localhost:3001/api/generate-reply 并发送 JSON 数据生成回复。
 通过这些示例，你应该能够使用 curl 命令调用本机的 /api 接口。如果遇到任何问题，请确保后端服务正在运行，并检查端口和 URL 是否正确。
 
+使用 curl 调用搜索
+
+`curl -X GET "http://localhost:3001/api/search?query=technology"`
+
 ### IP API
 
 `curl -X GET http://ip-api.com/json/`

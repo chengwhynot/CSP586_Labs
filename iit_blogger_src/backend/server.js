@@ -244,6 +244,39 @@ app.post('/api/posts/:id/replies', async (req, res) => {
   }
 });
 
+app.get('/api/search', async (req, res) => {
+  const { query } = req.query;
+  console.log(`Received GET /api/search request with query: ${query}`); // 输出日志，记录请求
+
+  if (!query) {
+    return res.status(400).send({ error: 'Query parameter is required' });
+  }
+
+  try {
+    const response = await axios.get(`${elasticsearchUrl}/posts/_search`, {
+      auth: {
+        username: elasticsearchUsername,
+        password: elasticsearchPassword,
+      },
+      httpsAgent,
+      params: {
+        q: `title:${query} OR content:${query} OR author:${query} OR replies.content:${query}`,
+      },
+    });
+
+    const hits = response.data.hits.hits;
+    console.log('Search hits: ', hits);
+    if (hits.length > 0) {
+      res.send(hits.map((hit) => ({ id: hit._id, ...hit._source })));
+    } else {
+      res.send([]);
+    }
+  } catch (error) {
+    console.error('Error searching posts:', error.message); // 输出错误日志
+    res.status(500).send({ error: error.message });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Backend server is running on http://localhost:${port}`);
 });
