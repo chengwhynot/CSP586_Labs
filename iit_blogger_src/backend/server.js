@@ -15,10 +15,15 @@ const elasticsearchUsername = 'elastic';
 const elasticsearchPassword = process.env.ELASTIC_PASSWORD;
 const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL;
 const MOCK_MODE = process.env.MOCK_MODE === 'true';
+const NEED_PROXY = process.env.NEED_PROXY === 'true';
+const HTTPS_PROXY_HOST = process.env.HTTPS_PROXY_HOST;
+const HTTPS_PROXY_PORT = process.env.HTTPS_PROXY_PORT;
+const HTTPS_PROXY_USER = process.env.HTTPS_PROXY_USER;
+const HTTPS_PROXY_PASS = process.env.HTTPS_PROXY_PASS;
 
 console.log('Elasticsearch Password:', elasticsearchPassword); // 输出日志，查看是否正确加载了密码
-console.log('https_proxy: ', process.env.HTTPS_PROXY);
-console.log('http_proxy: ', process.env.HTTP_PROXY);
+console.log('proxy enabled: ', NEED_PROXY);
+console.log('https_proxy_host: ', HTTPS_PROXY_HOST);
 
 const httpsAgent = new https.Agent({
   ca: fs.readFileSync('/Users/Q604934/.ssh/http_ca_elastic_local.crt'),
@@ -164,7 +169,11 @@ app.post('/api/generate-reply', async (req, res) => {
   const open_ai_url = OPENAI_BASE_URL + '/chat/completions';
   console.info(open_ai_url);
   const useProxy = !open_ai_url.includes('localhost');
-  const proxyAgent = useProxy ? new HttpsProxyAgent(process.env.HTTPS_PROXY) : null;
+  const proxyAgent = useProxy ? new HttpsProxyAgent({
+    host: HTTPS_PROXY_HOST,
+    port: HTTPS_PROXY_PORT,
+    auth: `${HTTPS_PROXY_USER}:${HTTPS_PROXY_PASS}`
+  }) : null;
 
   try {
     const response = await axios.post(
@@ -178,7 +187,7 @@ app.post('/api/generate-reply', async (req, res) => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         },
-        httpsAgent: proxyAgent,
+        httpsAgent: NEED_PROXY? proxyAgent: null,
       }
     );
     console.info('OpenAI response: ', response.data);
@@ -191,5 +200,5 @@ app.post('/api/generate-reply', async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Proxy server is running on http://localhost:${port}`);
+  console.log(`Backend server is running on http://localhost:${port}`);
 });
