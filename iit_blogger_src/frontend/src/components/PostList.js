@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Grid, Card, CardContent, Typography, Select, MenuItem, FormControl, InputLabel, Button } from '@mui/material';
 import axios from 'axios';
 
-const PostList = ({ user, onSubscribe, selectedTopic }) => {
+const PostList = ({ user, onSubscribe, selectedTopic, searchQuery }) => {
   const [posts, setPosts] = useState([]);
   const [subscribedTopics, setSubscribedTopics] = useState([]);
   const navigate = useNavigate();
@@ -25,6 +25,34 @@ const PostList = ({ user, onSubscribe, selectedTopic }) => {
 
     fetchPosts();
   }, []);
+
+  useEffect(() => {
+    if (searchQuery) {
+      // Fetch search results from the backend server
+      const fetchSearchResults = async () => {
+        try {
+          const response = await axios.get(`http://localhost:3001/api/search?query=${searchQuery}`);
+          setPosts(response.data);
+        } catch (error) {
+          console.error('Error fetching search results:', error);
+        }
+      };
+
+      fetchSearchResults();
+    } else {
+      // Fetch all posts if no search query
+      const fetchPosts = async () => {
+        try {
+          const response = await axios.get('http://localhost:3001/api/posts');
+          setPosts(response.data);
+        } catch (error) {
+          console.error('Error fetching posts:', error);
+        }
+      };
+
+      fetchPosts();
+    }
+  }, [searchQuery]);
 
   const handleSubscribe = () => {
     if (selectedTopic && !subscribedTopics.includes(selectedTopic)) {

@@ -11,6 +11,7 @@ const App = () => {
   const [auth, setAuth] = useState(null);
   const [subscribedTopics, setSubscribedTopics] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const topics = ["Culture", "Social", "Sports", "Technology", "Travel"];
 
   useEffect(() => {
@@ -44,11 +45,15 @@ const App = () => {
     setSelectedTopic(topic);
   };
 
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+  };
+
   return (
     <Router>
-      <Navbar auth={auth} setAuth={setAuth} subscribedTopics={subscribedTopics} onTopicSelect={handleTopicSelect} />
+      <Navbar auth={auth} setAuth={setAuth} subscribedTopics={subscribedTopics} onTopicSelect={handleTopicSelect} onSearch={handleSearch} />
       <Routes>
-        <Route path="/" element={<PostList posts={posts} user={auth} onSubscribe={handleSubscribe} selectedTopic={selectedTopic} />} />
+        <Route path="/" element={<PostList posts={posts} user={auth} onSubscribe={handleSubscribe} selectedTopic={selectedTopic} searchQuery={searchQuery} />} />
         <Route path="/create" element={<PostForm addPost={addPost} topics={topics} />} />
         <Route path="/post/:postId" element={<PostDetail posts={posts} />} />
         <Route path="/login" element={<Login setAuth={setAuth} />} />

@@ -11,12 +11,14 @@ import Badge from '@mui/material/Badge';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemText from '@mui/material/ListItemText';
+import TextField from '@mui/material/TextField';
 import axios from 'axios';
 
-const Navbar = ({ auth, setAuth, subscribedTopics, onTopicSelect }) => {
+const Navbar = ({ auth, setAuth, subscribedTopics, onTopicSelect, onSearch }) => {
   const [notifications, setNotifications] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
   const [location, setLocation] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const topics = ["Culture", "Social", "Sports", "Technology", "Travel"];
 
@@ -89,6 +91,18 @@ const Navbar = ({ auth, setAuth, subscribedTopics, onTopicSelect }) => {
 
   const handleHomeClick = () => {
     onTopicSelect('');
+    setSearchQuery('');
+    onSearch('');
+    navigate('/');
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    onSearch(searchQuery);
     navigate('/');
   };
 
@@ -101,6 +115,19 @@ const Navbar = ({ auth, setAuth, subscribedTopics, onTopicSelect }) => {
         <Typography variant="body1" style={{ marginRight: '16px' }}>
           {location}
         </Typography>
+        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center' }}>
+          <TextField
+            label="Search"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            variant="outlined"
+            size="small"
+            style={{ marginRight: '16px' }}
+          />
+          <Button type="submit" variant="contained" color="primary">
+            Search
+          </Button>
+        </form>
         <Button color="inherit" onClick={handleHomeClick}>
           Home
         </Button>
