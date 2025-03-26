@@ -11,10 +11,12 @@ import Badge from '@mui/material/Badge';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemText from '@mui/material/ListItemText';
+import axios from 'axios';
 
 const Navbar = ({ auth, setAuth, subscribedTopics, onTopicSelect }) => {
   const [notifications, setNotifications] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [location, setLocation] = useState('');
   const navigate = useNavigate();
   const topics = ["Culture", "Social", "Sports", "Technology", "Travel"];
 
@@ -33,6 +35,20 @@ const Navbar = ({ auth, setAuth, subscribedTopics, onTopicSelect }) => {
     return () => {
       window.removeEventListener('storage', fetchNotifications);
     };
+  }, []);
+
+  useEffect(() => {
+    // Fetch location from third-party API
+    const fetchLocation = async () => {
+      try {
+        const response = await axios.get('http://ip-api.com/json/');
+        setLocation(response.data.city + ', ' + response.data.country);
+      } catch (error) {
+        console.error('Error fetching location:', error);
+      }
+    };
+
+    fetchLocation();
   }, []);
 
   const handleLogout = () => {
@@ -81,6 +97,9 @@ const Navbar = ({ auth, setAuth, subscribedTopics, onTopicSelect }) => {
       <Toolbar>
         <Typography variant="h6" style={{ flexGrow: 1 }}>
           Blogging Platform
+        </Typography>
+        <Typography variant="body1" style={{ marginRight: '16px' }}>
+          {location}
         </Typography>
         <Button color="inherit" onClick={handleHomeClick}>
           Home
