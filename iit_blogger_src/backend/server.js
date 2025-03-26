@@ -14,6 +14,7 @@ const elasticsearchUrl = 'https://localhost:9200';
 const elasticsearchUsername = 'elastic';
 const elasticsearchPassword = process.env.ELASTIC_PASSWORD;
 const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL;
+const MOCK_MODE = process.env.MOCK_MODE === 'true';
 
 console.log('Elasticsearch Password:', elasticsearchPassword); // 输出日志，查看是否正确加载了密码
 console.log('https_proxy: ', process.env.HTTPS_PROXY);
@@ -27,6 +28,54 @@ const httpsAgent = new https.Agent({
 app.use(cors());
 app.use(express.json());
 app.use(morgan('combined')); // 使用 morgan 中间件记录请求日志
+
+const mockPosts = [
+  {
+    id: 1,
+    title: 'Mock Post 1',
+    content: 'This is the content of mock post 1.',
+    topic: 'Technology',
+    author: 'User1',
+    createdAt: new Date().toISOString(),
+    replies: [],
+  },
+  {
+    id: 2,
+    title: 'Mock Post 2',
+    content: 'This is the content of mock post 2.',
+    topic: 'Travel',
+    author: 'User2',
+    createdAt: new Date().toISOString(),
+    replies: [],
+  },
+  {
+    id: 3,
+    title: 'Mock Post 3',
+    content: 'This is the content of mock post 3.',
+    topic: 'Sports',
+    author: 'User3',
+    createdAt: new Date().toISOString(),
+    replies: [],
+  },
+  {
+    id: 4,
+    title: 'Mock Post 4',
+    content: 'This is the content of mock post 4.',
+    topic: 'Culture',
+    author: 'User4',
+    createdAt: new Date().toISOString(),
+    replies: [],
+  },
+  {
+    id: 5,
+    title: 'Mock Post 5',
+    content: 'This is the content of mock post 5.',
+    topic: 'Social',
+    author: 'User5',
+    createdAt: new Date().toISOString(),
+    replies: [],
+  },
+];
 
 app.post('/api/posts', async (req, res) => {
   const { id, title, content, topic, author, createdAt } = req.body;
@@ -52,6 +101,11 @@ app.post('/api/posts', async (req, res) => {
 
 app.get('/api/posts', async (req, res) => {
   console.log('Received GET /api/posts request'); // 输出日志，记录请求
+  if (MOCK_MODE) {
+    // 返回测试数据
+    return res.send(mockPosts);
+  }
+
   try {
     const response = await axios.get(`${elasticsearchUrl}/posts/_search`, {
       auth: {
@@ -76,6 +130,12 @@ app.get('/api/posts', async (req, res) => {
 app.get('/api/posts/:id', async (req, res) => {
   const { id } = req.params;
   console.log(`Received GET /api/posts/${id} request`); // 输出日志，记录请求
+  if (MOCK_MODE) {
+    // 返回测试数据
+    const post = mockPosts.find((p) => p.id === parseInt(id));
+    return res.send(post || {});
+  }
+
   try {
     const response = await axios.get(`${elasticsearchUrl}/posts/_doc/${id}`, {
       auth: {
@@ -101,9 +161,11 @@ app.get('/api/posts/:id', async (req, res) => {
 
 app.post('/api/generate-reply', async (req, res) => {
   const { content } = req.body;
-  //const proxyAgent = new HttpsProxyAgent(process.env.HTTPS_PROXY);
-  const open_ai_url = OPENAI_BASE_URL+'/chat/completions';
+  const open_ai_url = OPENAI_BASE_URL + '/chat/completions';
   console.info(open_ai_url);
+  const useProxy = !open_ai_url.includes('localhost');
+  const proxyAgent = useProxy ? new HttpsProxyAgent(process.env.HTTPS_PROXY) : null;
+
   try {
     const response = await axios.post(
       open_ai_url,
@@ -115,11 +177,11 @@ app.post('/api/generate-reply', async (req, res) => {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        }//,
-        // httpsAgent: proxyAgent,
+        },
+        httpsAgent: proxyAgent,
       }
     );
-    console.info('OpenAI response: ',response.data);
+    console.info('OpenAI response: ', response.data);
     const generatedReply = response.data.choices[0].message.content;
     res.send({ reply: generatedReply });
   } catch (error) {
