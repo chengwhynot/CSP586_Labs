@@ -12,10 +12,11 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemText from '@mui/material/ListItemText';
 
-const Navbar = ({ auth, setAuth, subscribedTopics }) => {
+const Navbar = ({ auth, setAuth, subscribedTopics, onTopicSelect }) => {
   const [notifications, setNotifications] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
+  const topics = ["Culture", "Social", "Sports", "Technology", "Travel"];
 
   useEffect(() => {
     // Fetch notifications from localStorage
@@ -65,15 +66,30 @@ const Navbar = ({ auth, setAuth, subscribedTopics }) => {
     window.dispatchEvent(new Event('storage'));
   };
 
+  const handleTopicClick = (topic) => {
+    onTopicSelect(topic);
+    navigate('/');
+  };
+
+  const handleHomeClick = () => {
+    onTopicSelect('');
+    navigate('/');
+  };
+
   return (
     <AppBar position="static">
       <Toolbar>
         <Typography variant="h6" style={{ flexGrow: 1 }}>
           Blogging Platform
         </Typography>
-        <Button color="inherit" component={Link} to="/">
+        <Button color="inherit" onClick={handleHomeClick}>
           Home
         </Button>
+        {topics.map((topic, index) => (
+          <Button key={index} color="inherit" onClick={() => handleTopicClick(topic)}>
+            {topic}
+          </Button>
+        ))}
         <Button color="inherit" component={Link} to="/create">
           Create Post
         </Button>

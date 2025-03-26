@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Grid, Card, CardContent, Typography, Select, MenuItem, FormControl, InputLabel, Button } from '@mui/material';
 
-const PostList = ({ posts, user, onSubscribe }) => {
-  const [selectedTopic, setSelectedTopic] = useState('');
+const PostList = ({ posts, user, onSubscribe, selectedTopic }) => {
   const [subscribedTopics, setSubscribedTopics] = useState([]);
   const navigate = useNavigate();
 
@@ -12,10 +11,6 @@ const PostList = ({ posts, user, onSubscribe }) => {
     const storedSubscribedTopics = JSON.parse(localStorage.getItem('subscribedTopics')) || [];
     setSubscribedTopics(storedSubscribedTopics);
   }, []);
-
-  const handleTopicChange = (event) => {
-    setSelectedTopic(event.target.value);
-  };
 
   const handleSubscribe = () => {
     if (selectedTopic && !subscribedTopics.includes(selectedTopic)) {
@@ -53,7 +48,7 @@ const PostList = ({ posts, user, onSubscribe }) => {
           <Select
             labelId="topic-select-label"
             value={selectedTopic}
-            onChange={handleTopicChange}
+            onChange={(e) => onSubscribe(e.target.value)}
             label="Filter by Topic"
           >
             <MenuItem value="">

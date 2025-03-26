@@ -10,6 +10,7 @@ const App = () => {
   const [posts, setPosts] = useState([]);
   const [auth, setAuth] = useState(null);
   const [subscribedTopics, setSubscribedTopics] = useState([]);
+  const [selectedTopic, setSelectedTopic] = useState('');
   const topics = ["Culture", "Social", "Sports", "Technology", "Travel"];
 
   useEffect(() => {
@@ -39,11 +40,15 @@ const App = () => {
     localStorage.setItem('subscribedTopics', JSON.stringify(newSubscribedTopics));
   };
 
+  const handleTopicSelect = (topic) => {
+    setSelectedTopic(topic);
+  };
+
   return (
     <Router>
-      <Navbar auth={auth} setAuth={setAuth} subscribedTopics={subscribedTopics} />
+      <Navbar auth={auth} setAuth={setAuth} subscribedTopics={subscribedTopics} onTopicSelect={handleTopicSelect} />
       <Routes>
-        <Route path="/" element={<PostList posts={posts} user={auth} onSubscribe={handleSubscribe} />} />
+        <Route path="/" element={<PostList posts={posts} user={auth} onSubscribe={handleSubscribe} selectedTopic={selectedTopic} />} />
         <Route path="/create" element={<PostForm addPost={addPost} topics={topics} />} />
         <Route path="/post/:postId" element={<PostDetail posts={posts} />} />
         <Route path="/login" element={<Login setAuth={setAuth} />} />
