@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Container, Typography, Divider, TextField, Button } from '@mui/material';
 import axios from 'axios';
 
-const PostDetail = ({ posts }) => {
+const PostDetail = () => {
   const { postId } = useParams();
   const [post, setPost] = useState(null);
   const [reply, setReply] = useState('');
@@ -11,33 +11,32 @@ const PostDetail = ({ posts }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchPost = () => {
-      const storedPosts = JSON.parse(localStorage.getItem('posts')) || [];
-      const post = storedPosts.find((p) => p.id === parseInt(postId));
-      if (post) {
-        setPost(post);
-        setReplies(post.replies || []);
+    const fetchPost = async () => {
+      try {
+        const response = await axios.get(`http://localhost:3001/api/posts/${postId}`);
+        setPost(response.data);
+        setReplies(response.data.replies || []);
+      } catch (error) {
+        console.error('Error fetching post:', error);
       }
     };
 
     fetchPost();
   }, [postId]);
 
-  const handleReplySubmit = () => {
-    const newReply = { content: reply, author: 'Current User', createdAt: new Date().toISOString() };
+  const handleReplySubmit = async () => {
+    const auth = JSON.parse(localStorage.getItem('auth'));
+    const author = auth ? auth.username : 'Anonymous';
+    const newReply = { content: reply, author: author, createdAt: new Date().toISOString() };
     const updatedReplies = [...replies, newReply];
     setReplies(updatedReplies);
     setReply('');
 
-    // Update the post with the new replies in the main posts array
-    const storedPosts = JSON.parse(localStorage.getItem('posts')) || [];
-    const updatedPosts = storedPosts.map((p) => {
-      if (p.id === parseInt(postId)) {
-        return { ...p, replies: updatedReplies };
-      }
-      return p;
-    });
-    localStorage.setItem('posts', JSON.stringify(updatedPosts));
+    try {
+      await axios.post(`http://localhost:3001/api/posts/${postId}/replies`, newReply);
+    } catch (error) {
+      console.error('Error adding reply:', error);
+    }
   };
 
   const handleGenerateReply = async () => {
@@ -97,6 +96,7 @@ const PostDetail = ({ posts }) => {
       <Button variant="contained" color="primary" onClick={handleReplySubmit}>
         Submit Reply
       </Button>
+      <input type="hidden" value={post.id} />
     </Container>
   );
 };

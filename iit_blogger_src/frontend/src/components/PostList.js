@@ -1,15 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Grid, Card, CardContent, Typography, Select, MenuItem, FormControl, InputLabel, Button } from '@mui/material';
+import axios from 'axios';
 
-const PostList = ({ posts, user, onSubscribe, selectedTopic }) => {
+const PostList = ({ user, onSubscribe, selectedTopic }) => {
+  const [posts, setPosts] = useState([]);
   const [subscribedTopics, setSubscribedTopics] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Fetch posts from the backend server
+    const fetchPosts = async () => {
+      try {
+        const response = await axios.get('http://localhost:3001/api/posts');
+        setPosts(response.data);
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      }
+    };
+
     // Fetch subscribed topics from localStorage
     const storedSubscribedTopics = JSON.parse(localStorage.getItem('subscribedTopics')) || [];
     setSubscribedTopics(storedSubscribedTopics);
+
+    fetchPosts();
   }, []);
 
   const handleSubscribe = () => {

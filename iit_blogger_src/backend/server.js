@@ -83,7 +83,8 @@ const mockPosts = [
 ];
 
 app.post('/api/posts', async (req, res) => {
-  const { id, title, content, topic, author, createdAt } = req.body;
+  const { title, content, topic, author, createdAt } = req.body;
+  const id = Date.now();
   console.log('Received POST /api/posts request:', req.body); // 输出日志，记录请求体
   try {
     await axios.post(
@@ -97,7 +98,7 @@ app.post('/api/posts', async (req, res) => {
         httpsAgent,
       }
     );
-    res.status(201).send({ message: 'Post created' });
+    res.status(201).send({ id, title, content, topic, author, createdAt });
   } catch (error) {
     console.error('Error creating post:', error.message); // 输出错误日志
     res.status(500).send({ error: error.message });
@@ -122,7 +123,7 @@ app.get('/api/posts', async (req, res) => {
     const hits = response.data.hits.hits;
     console.log('hits: ', hits);
     if (hits.length > 0) {
-      res.send(hits.map((hit) => hit._source));
+      res.send(hits.map((hit) => ({ id: hit._id, ...hit._source })));
     } else {
       res.send([]);
     }
@@ -150,7 +151,7 @@ app.get('/api/posts/:id', async (req, res) => {
       httpsAgent,
     });
     if (response.data.found) {
-      res.send(response.data._source);
+      res.send({ id, ...response.data._source });
     } else {
       res.send({});
     }
@@ -195,6 +196,50 @@ app.post('/api/generate-reply', async (req, res) => {
     res.send({ reply: generatedReply });
   } catch (error) {
     console.error('Error generating reply:', error.message);
+    res.status(500).send({ error: error.message });
+  }
+});
+
+app.post('/api/posts/:id/replies', async (req, res) => {
+  const { id } = req.params;
+  const { content, author } = req.body;
+  const createdAt = new Date().toISOString();
+  console.log(`Received POST /api/posts/${id}/replies request:`, req.body); // 输出日志，记录请求体
+
+  try {
+    const postResponse = await axios.get(`${elasticsearchUrl}/posts/_doc/${id}`, {
+      auth: {
+        username: elasticsearchUsername,
+        password: elasticsearchPassword,
+      },
+      httpsAgent,
+    });
+
+    if (!postResponse.data.found) {
+      return res.status(404).send({ error: 'Post not found' });
+    }
+
+    const post = postResponse.data._source;
+    if (!post.replies) {
+      post.replies = [];
+    }
+    post.replies.push({ content, author, createdAt });
+
+    await axios.put(
+      `${elasticsearchUrl}/posts/_doc/${id}`,
+      post,
+      {
+        auth: {
+          username: elasticsearchUsername,
+          password: elasticsearchPassword,
+        },
+        httpsAgent,
+      }
+    );
+
+    res.status(201).send({ id, content, author, createdAt });
+  } catch (error) {
+    console.error('Error adding reply:', error.message); // 输出错误日志
     res.status(500).send({ error: error.message });
   }
 });

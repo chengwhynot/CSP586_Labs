@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { TextField, Button, Container, FormControl, MenuItem, InputLabel, Select } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
-const PostForm = ({ addPost, topics }) => {
+const PostForm = ({ topics }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [topic, setTopic] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const auth = JSON.parse(localStorage.getItem('auth'));
     const author = auth ? auth.username : 'Anonymous';
@@ -19,22 +20,28 @@ const PostForm = ({ addPost, topics }) => {
       author,
       createdAt: new Date().toISOString()
     };
-    addPost(newPost);
 
-    // Check if the topic is in the subscribed topics list
-    const subscribedTopics = JSON.parse(localStorage.getItem('subscribedTopics')) || [];
-    if (subscribedTopics.includes(topic)) {
-      const notifications = JSON.parse(localStorage.getItem('notifications')) || [];
-      notifications.push({ topic, title });
-      localStorage.setItem('notifications', JSON.stringify(notifications));
-      // Trigger storage event to update notifications in Navbar
-      window.dispatchEvent(new Event('storage'));
+    try {
+      const response = await axios.post('http://localhost:3001/api/posts', newPost);
+      const createdPost = response.data;
+
+      // Check if the topic is in the subscribed topics list
+      const subscribedTopics = JSON.parse(localStorage.getItem('subscribedTopics')) || [];
+      if (subscribedTopics.includes(topic)) {
+        const notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+        notifications.push({ topic, title });
+        localStorage.setItem('notifications', JSON.stringify(notifications));
+        // Trigger storage event to update notifications in Navbar
+        window.dispatchEvent(new Event('storage'));
+      }
+
+      setTitle('');
+      setContent('');
+      setTopic('');
+      navigate(`/post/${createdPost.id}`);
+    } catch (error) {
+      console.error('Error creating post:', error);
     }
-
-    setTitle('');
-    setContent('');
-    setTopic('');
-    navigate('/');
   };
 
   return (
